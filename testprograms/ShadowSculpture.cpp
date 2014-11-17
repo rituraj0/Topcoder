@@ -64,177 +64,203 @@ bool adja( point a, point b)
      return (x <=1);//may be same
 }
 
-int incode( point a)
-{
-    return (100*a.x + 10*a.y+a.z);//o to 9 only
-}
-
-point decode(int a)
-{
-    point ans;
-
-    ans.z=a%10;
-    a=a/10;
-    ans.y=a%10;
-    a=a/10;
-    ans.x=a%10;
-
-    return ans;
-}
 
 class ShadowSculpture
 {
 public:
 
-vector<point> all[310];
+bool cool[11][11][11];
+bool done[11][11][11];
+int n;
 
-vector<int> graf[310];
+vector< point> all[1005];
+int curr;
 
-bool done[310];
-
-void dfs( int x)
+bool valid( int x )
 {
-    if( done[x] )
-         return ;
-
-    done[x]=true;
-
-    for(int i=0;i<sz( graf[x]);i++)
-         dfs( graf[x][i] );
+    return ( (0<=x) && (x <n));
 }
 
+void dfs( int x, int y , int z )
+{
+    if( done[x][y][z])
+         return ;
 
-map< int, bool > cantake;
+    done[x][y][z] = true;
+
+    all[ curr ].pb( point(x,y,z) );
+
+    for(int dx=-1;dx<=1;dx++)
+        for(int dy =-1; dy <=1 ; dy++)
+          for(int dz= -1 ; dz <=1 ; dz++)
+            {
+                int nx=x+dx;
+                int ny=y+dy;
+                int nz=z+dz;
+
+                if( valid(nx) && valid(ny) && valid(nz) )
+                    if( cool[nx][ny][nz] )
+                        if( adja( point(nx,ny,nz) , point(x,y,z) ) )
+                        {
+                            dfs(nx,ny,nz);
+                        }
+            }
+}//edn dfs
 
 string possible(vector <string> XY, vector <string> YZ, vector <string> ZX)
 {
-    int n=sz(XY);
+     n=sz(XY);
+
+     print(n);
+
     int cont=0;
+
+    // init all as true
+    fill(cool,true);
+
+    print(cool[1][2][3]);
+
+    int Y_cont=0;
+
 
     //build for XY
     for(int i=0;i<n;i++)
         for(int j=0;j<n;j++)
-          if( XY[i][j]=='Y')
+          if( XY[i][j]=='N')
             {
                 for(int k=0;k<n;k++)
-                     all[cont].pb ( point(i,j,k));
-
-                     cont++;
+                    cool[i][j][k]=false;
             }
+           else
+           {
+               Y_cont++;
+           }
 
      //build for YZ
     for(int i=0;i<n;i++)
         for(int j=0;j<n;j++)
-          if( YZ[i][j]=='Y')
+          if( YZ[i][j]=='N')
            {
                 for(int k=0;k<n;k++)
-                     all[cont].pb( point(k,i,j) );
-
-                     cont++;
+                    cool[k][i][j]=false;
             }
+          else
+           {
+               Y_cont++;
+           }
 
     //build for ZX
 
     for(int i=0;i<n;i++)
         for(int j=0;j<n;j++)
-          if( ZX[i][j]=='Y')
+          if( ZX[i][j]=='N')
            {
                 for(int k=0;k<n;k++)
-                     all[cont].pb( point(j,k,i));
-
-                     cont++;
+                    cool[j][k][i]=false;
             }
+           else
+           {
+               Y_cont++;
+           }
 
+       // if no Y is there , return true;
 
-          if( cont==0)
+       if( Y_cont==0)
+       {
+           return "Possible";
+       }
+
+     //start dfs
+
+     fill(done,0);
+
+     curr=0;
+
+     for(int i=0;i<n;i++)
+        for(int j=0;j<n;j++)
+         for(int k=0;k<n;k++)
+           if( cool[i][j][k])
+             if( !done[i][j][k])
+                {
+                    dfs(i,j,k);
+
+                   // cout<<curr<<"  "<<sz( all[curr] )<<"  "<<all[curr][0].x<<"  "<<all[curr][0].y<<"  "<<all[curr][0].z<<endl;
+
+                     curr++;
+                }
+
+      // Now for all compnet check if we can get a similar congfiuaration
+
+     bool  taken[11][11][11];
+
+      for(int cp=0;cp<curr;cp++)
+      {
+            fill(taken,0);
+
+          for(int i=0;i<sz( all[cp] ) ;i++ )
           {
-                return "Possible";
+              taken[ all[cp][i].x ][ all[cp][i].y ] [ all[cp][i].z ]=true;
           }
 
-     //Now building graf
-
-     for(int i=0;i<cont;i++)
-                    for(int a=0;a<sz( all[i] );a++)
-                    {
-                        cantake[ incode(all[i][a]) ]=true;
-                    }
+          bool ans=true;
 
 
-     for(int i=0;i<sz(all[0]);i++)
-     {
+          //for any Y  , if not Y in this list , just break the answer
 
-         set<int> st;
-
-         st.insert( incode(all[0][i]) );//start from here
-
-         //flod fill type
-
-         for(int it=0;it<1009;it++)
-         {
-             set<int> nw;
-
-             cout<<"Here";
-
-             for( set<int>::iterator it1=st.begin();it1!=st.end();it1++)
-             {
-                 int curr=*it1;
-
-                 point pt=decode(curr);
-
-                 for(int dx=-1;dx<2;dx++)
-                    for(int dy=-1;dy<2;dy++)
-                     for(int dz=-1;dz<2;dz++)
+                       //build for XY
+                for(int i=0;i<n;i++)
+                    for(int j=0;j<n;j++)
+                      if( XY[i][j]=='Y')
                         {
+                            bool mila=false;
 
-                                if( abs(dx)+abs(dy)+abs(dz) > 1 )
-                                     continue;
+                            for(int k=0;k<n;k++)
+                                if( taken[i][j][k])
+                                   mila=true;
 
-                                int nx=pt.x+dx;
-                                int ny=pt.y+dy;
-                                int nz=pt.x+dz;
+                            //    cool[i][j][k]=false;
 
-                                if( (nx <0) || (nx >=n))
-                                    if( (ny <0) || (ny >=n))
-                                     if( (nz <0) || (nz >=n))
-                                        continue;
-
-                                 int newp=incode( point(nx,ny,nz) );
-
-                                 if( cantake[newp])
-                                    nw.insert(newp);
-
+                            if( !mila)
+                                   ans=false;
                         }
-              }//out of all SET iterration
 
-              if(nw==st)
-                 break; //cont add nay new
+                 //build for YZ
+                for(int i=0;i<n;i++)
+                    for(int j=0;j<n;j++)
+                      if( YZ[i][j]=='Y')
+                       {
+                           bool mila=false;
 
-               st=nw;
-         }
+                            for(int k=0;k<n;k++)
+                                 if( taken[k][i][j])
+                                     mila=true;
 
-         //now verify st;
+                            if( !mila)
+                                   ans=false;
+                        }
 
-         bool all_mila=true;
+                //build for ZX
 
-         for(int a=0;a<cont;a++)//for all group
-         {
-            bool mila=false;
+                for(int i=0;i<n;i++)
+                    for(int j=0;j<n;j++)
+                      if( ZX[i][j]=='Y')
+                       {
+                            bool mila=false;
 
-            for(int j=0;j<sz(all[a]);j++)
-                 if( st.find( incode(all[a][j]))!=st.end())
-                    mila=true;
+                            for(int k=0;k<n;k++)
+                                 if( taken[j][k][i])
+                                    mila=true;
 
-            if(!mila)
-                all_mila=false;
+                                //cool[j][k][i]=false;
 
-         }
+                                if( !mila)
+                                    ans=false;
+                       }
 
-         if( all_mila)
-         {
-            return "Possible";
-         }
-     }
 
+                  if( ans )
+                     return "Possible";
+      }
 
 
      return "Impossible";
@@ -379,6 +405,70 @@ double test4() {
 	}
 }
 
+/*
+
+,
+,
+
+
+*/
+
+double test5() {
+	string t0[] = {"YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY"};
+	vector <string> p0(t0, t0+sizeof(t0)/sizeof(string));
+	string t1[] = {"YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY"};
+	vector <string> p1(t1, t1+sizeof(t1)/sizeof(string));
+	string t2[] =  {"YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY", "YYYYYYYY"};
+	vector <string> p2(t2, t2+sizeof(t2)/sizeof(string));
+	ShadowSculpture * obj = new ShadowSculpture();
+	clock_t start = clock();
+	string my_answer = obj->possible(p0, p1, p2);
+	clock_t end = clock();
+	delete obj;
+	cout <<"Time: " <<(double)(end-start)/CLOCKS_PER_SEC <<" seconds" <<endl;
+	string p3 = "Possible";
+	cout <<"Desired answer: " <<endl;
+	cout <<"\t\"" << p3 <<"\"" <<endl;
+	cout <<"Your answer: " <<endl;
+	cout <<"\t\"" << my_answer<<"\"" <<endl;
+	if (p3 != my_answer) {
+		cout <<"DOESN'T MATCH!!!!" <<endl <<endl;
+		return -1;
+	}
+	else {
+		cout <<"Match :-)" <<endl <<endl;
+		return (double)(end-start)/CLOCKS_PER_SEC;
+	}
+}
+
+double test6() {
+	string t0[] = {"YNY","YYY","YYY"};
+	vector <string> p0(t0, t0+sizeof(t0)/sizeof(string));
+	string t1[] = {"YNY","YYY","YYY"};
+	vector <string> p1(t1, t1+sizeof(t1)/sizeof(string));
+	string t2[] = {"YNY","YYY","YYY"};
+	vector <string> p2(t2, t2+sizeof(t2)/sizeof(string));
+	ShadowSculpture * obj = new ShadowSculpture();
+	clock_t start = clock();
+	string my_answer = obj->possible(p0, p1, p2);
+	clock_t end = clock();
+	delete obj;
+	cout <<"Time: " <<(double)(end-start)/CLOCKS_PER_SEC <<" seconds" <<endl;
+	string p3 = "Possible";
+	cout <<"Desired answer: " <<endl;
+	cout <<"\t\"" << p3 <<"\"" <<endl;
+	cout <<"Your answer: " <<endl;
+	cout <<"\t\"" << my_answer<<"\"" <<endl;
+	if (p3 != my_answer) {
+		cout <<"DOESN'T MATCH!!!!" <<endl <<endl;
+		return -1;
+	}
+	else {
+		cout <<"Match :-)" <<endl <<endl;
+		return (double)(end-start)/CLOCKS_PER_SEC;
+	}
+}
+
 int main() {
 	int time;
 	bool errors = false;
@@ -391,17 +481,26 @@ int main() {
 	if (time < 0)
 		errors = true;
 
-//	time = test2();
-//	if (time < 0)
-//		errors = true;
-//
-//	time = test3();
-//	if (time < 0)
-//		errors = true;
-//
-//	time = test4();
-//	if (time < 0)
-//		errors = true;
+	time = test2();
+	if (time < 0)
+		errors = true;
+
+	time = test3();
+	if (time < 0)
+		errors = true;
+
+	time = test4();
+	if (time < 0)
+		errors = true;
+
+    time = test5();
+	if (time < 0)
+		errors = true;
+
+	time = test6();
+	if (time < 0)
+		errors = true;
+
 
 	if (!errors)
 		cout <<"You're a stud (at least on the example cases)!" <<endl;
